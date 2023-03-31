@@ -5,9 +5,9 @@
 /// <https://docs.substrate.io/reference/frame-pallets/>
 pub use pallet::*;
 use frame_support::pallet_prelude::*;
+use frame_support::inherent::Vec;
 use frame_system::pallet_prelude::*;
-use sp_runtime::ArithmeticError;
-use primitives::{ElectionId, CandidateId, VoteCount, ZKPCommitmentValue, Vote, VotingSystem};
+use primitives::{ElectionId, CandidateId, VoteCount, ZKPCommitmentValue};//, Vote, VotingSystem};
 use pallet_election::ElectionInfo;
 
 #[cfg(test)]
@@ -72,23 +72,23 @@ pub mod pallet {
 		/// Self register by voter
 		#[pallet::call_index(0)]
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1).ref_time())]
-		pub fn cast_vote(origin: OriginFor<T>, election_id: ElectionId, candidate_id: CandidateId, zkp_value: ZKPCommitmentValue, transcript: Vec<u8>, zkp_randomness: Vec<u8>) -> DispatchResult {
+		pub fn cast_vote(origin: OriginFor<T>, election_id: ElectionId, candidate_id: CandidateId, _zkp_value: ZKPCommitmentValue, _transcript: Vec<u8>, _zkp_randomness: Vec<u8>) -> DispatchResult {
 			let _ = ensure_signed(origin)?;
 			ensure!(
 				!&T::ElectionInfo::is_election_open_for_voting(&election_id),
 				Error::<T>::InvalidElectionIdOrNotOpenForVoting
 			);
 			
-			let transcript_ref: &'static [u8] = unsafe { std::mem::transmute(transcript.as_slice()) };
+			//let transcript_ref: &'static [u8] = unsafe { std::mem::transmute(transcript.as_slice()) };
 
-			let vs = VotingSystem::new(transcript_ref);
+			/*let vs = VotingSystem::new(transcript_ref);
 	        let vote = vs.cast_vote(
 	            candidate_id, 
 	            zkp_value, 
 	            &zkp_randomness, 
-	        );
+	        );*/
 			// Update storage for vote count for particular election id and candidate id
-			Self::vote_inc(election_id, candidate_id);
+			let _ = Self::vote_inc(election_id, candidate_id);
 
 			// Emit an event.
 			Self::deposit_event(Event::VoteCasted);

@@ -5,6 +5,7 @@
 /// <https://docs.substrate.io/reference/frame-pallets/>
 pub use pallet::*;
 use frame_support::pallet_prelude::*;
+use frame_support::inherent::Vec;
 use frame_system::pallet_prelude::*;
 use primitives::ElectionId;
 use pallet_election::ElectionInfo;
@@ -68,7 +69,7 @@ pub mod pallet {
 		/// Self register by voter
 		#[pallet::call_index(0)]
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1).ref_time())]
-		pub fn register_voter(origin: OriginFor<T>, election_id: ElectionId, key: String, value: String) -> DispatchResult {
+		pub fn register_voter(origin: OriginFor<T>, election_id: ElectionId, _key: Vec<u8>, _value: Vec<u8>) -> DispatchResult {
 			let voter_account = ensure_signed(origin)?;
 			ensure!(
 				!&T::ElectionInfo::is_election_open_for_voter_registration(&election_id),

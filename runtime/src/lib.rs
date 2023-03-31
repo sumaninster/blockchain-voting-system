@@ -39,6 +39,7 @@ pub use frame_support::{
 	},
 	StorageValue,
 };
+pub use frame_system::{EnsureRoot, EnsureSigned, RawOrigin};
 pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
@@ -47,8 +48,11 @@ use pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 
-/// Import the template pallet.
-pub use pallet_template;
+/// Import the election pallet.
+pub use pallet_ballot;
+pub use pallet_candidate;
+pub use pallet_election;
+pub use pallet_voter;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -97,8 +101,8 @@ pub mod opaque {
 // https://docs.substrate.io/main-docs/build/upgrade#runtime-versioning
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("node-template"),
-	impl_name: create_runtime_str!("node-template"),
+	spec_name: create_runtime_str!("rvs"),
+	impl_name: create_runtime_str!("rvs"),
 	authoring_version: 1,
 	// The version of the runtime specification. A full node will not attempt to use its native
 	//   runtime in substitute for the on-chain Wasm runtime unless all of `spec_name`,
@@ -276,9 +280,28 @@ impl pallet_sudo::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 }
 
-/// Configure the pallet-template in pallets/template.
-impl pallet_template::Config for Runtime {
+/// Configure the pallet-election in pallets/election.
+impl pallet_ballot::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
+	type ElectionInfo = ElectionModule;
+	type ElectionCommissionApproveOrigin = EnsureRoot<AccountId>;
+}
+
+impl pallet_candidate::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type ElectionInfo = ElectionModule;
+	type ElectionCommissionApproveOrigin = EnsureRoot<AccountId>;
+}
+
+impl pallet_election::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+    type RuntimeOrigin = RuntimeOrigin;
+	type ElectionCommissionApproveOrigin = EnsureRoot<AccountId>;
+}
+
+impl pallet_voter::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type ElectionInfo = ElectionModule;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -297,8 +320,11 @@ construct_runtime!(
 		Balances: pallet_balances,
 		TransactionPayment: pallet_transaction_payment,
 		Sudo: pallet_sudo,
-		// Include the custom logic from the pallet-template in the runtime.
-		TemplateModule: pallet_template,
+		// Include the custom logic from the pallet-election in the runtime.
+		BallotModule: pallet_ballot,
+		CandidateModule: pallet_candidate,
+		ElectionModule: pallet_election,
+		VoterModule: pallet_voter,
 	}
 );
 
@@ -345,7 +371,10 @@ mod benches {
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_balances, Balances]
 		[pallet_timestamp, Timestamp]
-		[pallet_template, TemplateModule]
+		[pallet_ballot, BallotModule]
+		[pallet_candidate, CandidateModule]
+		[pallet_election, ElectionModule]
+		[pallet_voter, VoterModule]
 	);
 }
 

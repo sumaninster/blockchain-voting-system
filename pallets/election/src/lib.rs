@@ -4,10 +4,16 @@
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// <https://docs.substrate.io/reference/frame-pallets/>
 pub use pallet::*;
-use frame_support::pallet_prelude::*;
+use frame_support::{
+	pallet_prelude::*,
+	error::BadOrigin,
+};
 use frame_system::pallet_prelude::*;
-use sp_runtime::ArithmeticError;
+use sp_runtime::{ArithmeticError, DispatchError};
 use primitives::ElectionId;
+//use sp_runtime::print;
+//use scale_info::prelude::format;
+//use scale_info::prelude::string::String;
 
 #[cfg(test)]
 mod mock;
@@ -25,26 +31,44 @@ pub mod pallet {
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
+	/*use frame_support::Printable;
 
+	impl Printable for String {
+	    fn print(&self) {
+	        sp_runtime::print(self);
+	    }
+	}*/
+	macro_rules! ensure_origin {
+        ($required_origin:ident, $origin:expr) => {
+            if T::$required_origin::ensure_origin($origin.clone()).is_ok()
+                //|| T::Members::contains(&ensure_signed($origin)?)
+            {
+                Ok(())
+            } else {
+                Err(DispatchError::from(BadOrigin))
+            }
+        };
+    }
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		type RuntimeOrigin: IsType<<Self as frame_system::Config>::RuntimeOrigin>;
 		/// Allowed origins for only election commission
-		type ElectionCommissionApproveOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+		type ElectionCommissionApproveOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin>;
 	}
 
 	// The pallet's runtime storage items.
 	// https://docs.substrate.io/main-docs/build/runtime-storage/
 
 	#[pallet::storage]
-	#[pallet::getter(fn open_for_voter_registration)]
+	#[pallet::getter(fn election_open_for_voter_registration)]
 	// Active elections that are open for registration
 	pub type ElectionOpenForVoterRegistration<T> = StorageMap<_, Blake2_128Concat, ElectionId, bool>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn open_for_election)]
+	#[pallet::getter(fn election_open_for_voting)]
 	// Active elections that are open for registration
 	pub type ElectionOpenForVoting<T> = StorageMap<_, Blake2_128Concat, ElectionId, bool>;
 
@@ -112,9 +136,12 @@ pub mod pallet {
 		/// Self register by voter
 		#[pallet::call_index(0)]
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1).ref_time())]
-		pub fn register_new_election_id(origin: OriginFor<T>) -> DispatchResult {
+		pub fn register_new_election(origin: OriginFor<T>) -> DispatchResult {
 			// Check if the sender is an approved origin or not
-			T::ElectionCommissionApproveOrigin::ensure_origin(origin)?;
+			//let who = ensure_signed(origin)?;
+			//print(format!("Suman: Executing transaction, {:?}", who));
+			//T::ElectionCommissionApproveOrigin::ensure_origin(origin)?;
+			ensure_origin!(ElectionCommissionApproveOrigin, origin)?;
 			let election_id = Self::election_id_inc()?;
 			// Update storage for election id
 			<ElectionOpenForVoterRegistration<T>>::insert(election_id, false);
@@ -127,7 +154,7 @@ pub mod pallet {
 		/// Self register by voter
 		#[pallet::call_index(1)]
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1).ref_time())]
-		pub fn de_register_election_id(origin: OriginFor<T>, election_id: ElectionId) -> DispatchResult {
+		pub fn de_register_election(origin: OriginFor<T>, election_id: ElectionId) -> DispatchResult {
 			// Check if the sender is an approved origin or not
 			T::ElectionCommissionApproveOrigin::ensure_origin(origin)?;
 			// Update storage for election id
@@ -141,15 +168,15 @@ pub mod pallet {
 		/// Self register by voter
 		#[pallet::call_index(2)]
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1).ref_time())]
-		pub fn election_open_for_voter_registration(origin: OriginFor<T>, election_id: ElectionId) -> DispatchResult {
+		pub fn open_for_voter_registration(origin: OriginFor<T>, election_id: ElectionId) -> DispatchResult {
 			// Check if the sender is an approved origin or not
 			T::ElectionCommissionApproveOrigin::ensure_origin(origin)?;
 			ensure!(
-				!<ElectionOpenForVoterRegistration<T>>::contains_key(&election_id),
+				<ElectionOpenForVoterRegistration<T>>::contains_key(&election_id),
 				Error::<T>::InvalidElectionId
 			);
 			ensure!(
-				<ElectionOpenForVoterRegistration<T>>::get(&election_id).unwrap_or(false),
+				<ElectionOpenForVoterRegistration<T>>::get(&election_id).unwrap_or(true),
 				Error::<T>::ElectionIdAlreadyOpenForVoterRegistration
 			);
 			// Update storage for election id
@@ -163,15 +190,15 @@ pub mod pallet {
 		/// Self register by voter
 		#[pallet::call_index(3)]
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1).ref_time())]
-		pub fn election_close_for_voter_registration(origin: OriginFor<T>, election_id: ElectionId) -> DispatchResult {
+		pub fn close_for_voter_registration(origin: OriginFor<T>, election_id: ElectionId) -> DispatchResult {
 			// Check if the sender is an approved origin or not
 			T::ElectionCommissionApproveOrigin::ensure_origin(origin)?;
 			ensure!(
-				!<ElectionOpenForVoterRegistration<T>>::contains_key(&election_id),
+				<ElectionOpenForVoterRegistration<T>>::contains_key(&election_id),
 				Error::<T>::InvalidElectionId
 			);
 			ensure!(
-				!<ElectionOpenForVoterRegistration<T>>::get(&election_id).unwrap_or(false),
+				<ElectionOpenForVoterRegistration<T>>::get(&election_id).unwrap_or(true),
 				Error::<T>::ElectionIdNotOpenForVoterRegistration
 			);
 			// Update storage for election id
@@ -185,7 +212,7 @@ pub mod pallet {
 		/// Self register by voter
 		#[pallet::call_index(4)]
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1).ref_time())]
-		pub fn register_election_for_voting(origin: OriginFor<T>) -> DispatchResult {
+		pub fn register_for_voting(origin: OriginFor<T>) -> DispatchResult {
 			// Check if the sender is an approved origin or not
 			T::ElectionCommissionApproveOrigin::ensure_origin(origin)?;
 			Self::election_id_inc()?;
@@ -201,7 +228,7 @@ pub mod pallet {
 		/// Self register by voter
 		#[pallet::call_index(5)]
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1).ref_time())]
-		pub fn de_register_election_for_voting(origin: OriginFor<T>, election_id: ElectionId) -> DispatchResult {
+		pub fn de_register_for_voting(origin: OriginFor<T>, election_id: ElectionId) -> DispatchResult {
 			// Check if the sender is an approved origin or not
 			T::ElectionCommissionApproveOrigin::ensure_origin(origin)?;
 			// Update storage for election id
@@ -215,11 +242,11 @@ pub mod pallet {
 		/// Self register by voter
 		#[pallet::call_index(6)]
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1).ref_time())]
-		pub fn election_open_for_voting(origin: OriginFor<T>, election_id: ElectionId) -> DispatchResult {
+		pub fn open_for_voting(origin: OriginFor<T>, election_id: ElectionId) -> DispatchResult {
 			// Check if the sender is an approved origin or not
 			T::ElectionCommissionApproveOrigin::ensure_origin(origin)?;
 			ensure!(
-				!<ElectionOpenForVoting<T>>::contains_key(&election_id),
+				<ElectionOpenForVoting<T>>::contains_key(&election_id),
 				Error::<T>::InvalidElectionId
 			);
 			ensure!(
@@ -237,15 +264,15 @@ pub mod pallet {
 		/// Self register by voter
 		#[pallet::call_index(7)]
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1).ref_time())]
-		pub fn election_close_for_voting(origin: OriginFor<T>, election_id: ElectionId) -> DispatchResult {
+		pub fn close_for_voting(origin: OriginFor<T>, election_id: ElectionId) -> DispatchResult {
 			// Check if the sender is an approved origin or not
 			T::ElectionCommissionApproveOrigin::ensure_origin(origin)?;
 			ensure!(
-				!<ElectionOpenForVoting<T>>::contains_key(&election_id),
+				<ElectionOpenForVoting<T>>::contains_key(&election_id),
 				Error::<T>::InvalidElectionId
 			);
 			ensure!(
-				!<ElectionOpenForVoting<T>>::get(&election_id).unwrap_or(false),
+				<ElectionOpenForVoting<T>>::get(&election_id).unwrap_or(true),
 				Error::<T>::ElectionIdNotOpenForVoting
 			);
 			// Update storage for election id
