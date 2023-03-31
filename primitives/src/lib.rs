@@ -5,10 +5,11 @@ use sp_runtime::RuntimeDebug;
 use scale_info::{TypeInfo};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use curve25519_dalek_ng::{scalar::Scalar, ristretto::CompressedRistretto};
-use bulletproofs::{BulletproofGens, PedersenGens, RangeProof};
+use frame_support::inherent::Vec;
+//use curve25519_dalek_ng::{scalar::Scalar, ristretto::CompressedRistretto};
+//use bulletproofs::{BulletproofGens, PedersenGens, RangeProof};
 
-pub mod zkp;
+//pub mod zkp;
 
 /// The type for identifying the elections
 pub type ElectionId = u64;
@@ -27,7 +28,7 @@ pub struct CandidateInfo {
 	pub name: Vec<u8>,
 	pub info: Vec<u8>,
 }
-
+/*
 //Implement the ZKP Module:
 pub struct ZKPModule {
     pc_gens: PedersenGens,
@@ -51,4 +52,4 @@ pub struct Vote {
 
 pub struct VotingSystem {
     pub transcript: &'static [u8],
-}
+}*/

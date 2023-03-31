@@ -5,6 +5,7 @@
 /// <https://docs.substrate.io/reference/frame-pallets/>
 pub use pallet::*;
 use frame_support::pallet_prelude::*;
+use frame_support::inherent::Vec;
 use frame_system::pallet_prelude::*;
 use sp_runtime::ArithmeticError;
 use primitives::{ElectionId, CandidateId, CandidateInfo};

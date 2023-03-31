@@ -1,4 +1,4 @@
-use crate as pallet_template;
+use crate as pallet_election;
 use frame_support::traits::{ConstU16, ConstU64};
 use sp_core::H256;
 use sp_runtime::{
@@ -17,7 +17,7 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system,
-		TemplateModule: pallet_template,
+		ElectionModule: pallet_election,
 	}
 );
 
@@ -48,8 +48,10 @@ impl frame_system::Config for Test {
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
-impl pallet_template::Config for Test {
+impl pallet_election::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
+    type RuntimeOrigin = RuntimeOrigin;
+	type ElectionCommissionApproveOrigin = frame_system::EnsureRoot<Self::AccountId>;
 }
 
 // Build genesis storage according to the mock runtime.
